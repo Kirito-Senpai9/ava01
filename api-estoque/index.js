@@ -1,72 +1,83 @@
+// index.js - API de Estoque (Node.js + Express)
+// CRUD completo para produtos em memória.
 const express = require('express');
 const cors = require('cors');
 
 const app = express();
-const port = 3000;
-const host = '192.168.1.129';
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
 
-// Lista em memória para armazenar os produtos
+// Estrutura do objeto produto:
+// { id: 1678912345, nome: "Teclado Mecânico", quantidade: 25, preco: 350.50 }
 let produtos = [
-  { id: 1, nome: 'Teclado Mec\u00e2nico', quantidade: 25, preco: 350.50 }
+  { id: 1724160001001, nome: "Teclado Mecânico", quantidade: 25, preco: 350.50 },
+  { id: 1724160001002, nome: "Mouse Gamer", quantidade: 40, preco: 129.90 },
+  { id: 1724160001003, nome: "Monitor 24\"", quantidade: 10, preco: 999.00 },
 ];
 
-// Retorna todos os produtos
+const validarProduto = (body) => {
+  const erros = [];
+  if (!body || typeof body !== 'object') {
+    erros.push('Corpo da requisição inválido.');
+    return erros;
+  }
+  const { nome, quantidade, preco } = body;
+  if (!nome || typeof nome !== 'string') erros.push('Campo "nome" é obrigatório e deve ser string.');
+  if (quantidade === undefined || isNaN(Number(quantidade))) erros.push('Campo "quantidade" é obrigatório e deve ser numérico.');
+  if (preco === undefined || isNaN(Number(preco))) erros.push('Campo "preco" é obrigatório e deve ser numérico.');
+  return erros;
+};
+
+// GET /produtos: lista completa
 app.get('/produtos', (req, res) => {
   res.json(produtos);
 });
 
-// Retorna um produto por ID
+// GET /produtos/:id: produto específico
 app.get('/produtos/:id', (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = Number(req.params.id);
   const produto = produtos.find(p => p.id === id);
-  if (!produto) {
-    return res.status(404).json({ message: 'Produto n\u00e3o encontrado.' });
-  }
+  if (!produto) return res.status(404).json({ erro: 'Produto não encontrado.' });
   res.json(produto);
 });
 
-// Adiciona um novo produto
+// POST /produtos: cria novo
 app.post('/produtos', (req, res) => {
+  const erros = validarProduto(req.body);
+  if (erros.length) return res.status(400).json({ erros });
+
   const { nome, quantidade, preco } = req.body;
-  if (nome === undefined || quantidade === undefined || preco === undefined) {
-    return res.status(400).json({ message: 'Campos nome, quantidade e preco s\u00e3o obrigat\u00f3rios.' });
-  }
-  const novoProduto = {
-    id: Date.now(),
-    nome,
-    quantidade: Number(quantidade),
-    preco: Number(preco)
-  };
-  produtos.push(novoProduto);
-  res.status(201).json(novoProduto);
+  const id = Date.now(); // id simples baseado em timestamp
+  const novo = { id, nome, quantidade: Number(quantidade), preco: Number(preco) };
+  produtos.push(novo);
+  res.status(201).json(novo);
 });
 
-// Atualiza um produto existente
+// PUT /produtos/:id: atualiza
 app.put('/produtos/:id', (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = Number(req.params.id);
+  const idx = produtos.findIndex(p => p.id === id);
+  if (idx === -1) return res.status(404).json({ erro: 'Produto não encontrado.' });
+
+  const erros = validarProduto(req.body);
+  if (erros.length) return res.status(400).json({ erros });
+
   const { nome, quantidade, preco } = req.body;
-  const index = produtos.findIndex(p => p.id === id);
-  if (index === -1) {
-    return res.status(404).json({ message: 'Produto n\u00e3o encontrado.' });
-  }
-  produtos[index] = { id, nome, quantidade: Number(quantidade), preco: Number(preco) };
-  res.json(produtos[index]);
+  const atualizado = { id, nome, quantidade: Number(quantidade), preco: Number(preco) };
+  produtos[idx] = atualizado;
+  res.json(atualizado);
 });
 
-// Remove um produto
+// DELETE /produtos/:id: remove
 app.delete('/produtos/:id', (req, res) => {
-  const id = parseInt(req.params.id);
-  const index = produtos.findIndex(p => p.id === id);
-  if (index === -1) {
-    return res.status(404).json({ message: 'Produto n\u00e3o encontrado.' });
-  }
-  produtos.splice(index, 1);
+  const id = Number(req.params.id);
+  const lenAntes = produtos.length;
+  produtos = produtos.filter(p => p.id != id);
+  if (produtos.length === lenAntes) return res.status(404).json({ erro: 'Produto não encontrado.' });
   res.status(204).send();
 });
 
-app.listen(port, host, () => {
-  console.log(`Servidor da API rodando em http://${host}:${port}`);
-});
+app.get('/', (req, res) => res.send('Servidor da API de Estoque rodando.'));
+app.listen(PORT, () => console.log(`Servidor da API rodando em http://localhost:${PORT}`));
