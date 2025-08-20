@@ -3,6 +3,7 @@ const cors = require('cors');
 
 const app = express();
 const port = 3000;
+const host = '192.168.1.129';
 
 app.use(cors());
 app.use(express.json());
@@ -66,6 +67,6 @@ app.delete('/produtos/:id', (req, res) => {
   res.status(204).send();
 });
 
-app.listen(port, () => {
-  console.log(`Servidor da API rodando em http://localhost:${port}`);
+app.listen(port, host, () => {
+  console.log(`Servidor da API rodando em http://${host}:${port}`);
 });
