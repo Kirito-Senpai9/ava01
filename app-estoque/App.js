@@ -1,11 +1,11 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createStackNavigator } from '@react-navigation/stack';
 import ListaProdutosScreen from './screens/ListaProdutosScreen';
 import AddProdutoScreen from './screens/AddProdutoScreen';
 import EditProdutoScreen from './screens/EditProdutoScreen';
 
-const Stack = createNativeStackNavigator();
+const Stack = createStackNavigator();
 
 export default function App() {
   return (
