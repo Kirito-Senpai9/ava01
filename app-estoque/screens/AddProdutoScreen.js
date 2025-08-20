@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, TextInput, Button, StyleSheet } from 'react-native';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'http://192.168.1.129:3000';
 
 export default function AddProdutoScreen({ navigation }) {
   const [nome, setNome] = useState('');
@@ -10,11 +10,14 @@ export default function AddProdutoScreen({ navigation }) {
   const [preco, setPreco] = useState('');
 
   const salvar = () => {
-    axios.post(`${API_URL}/produtos`, {
-      nome,
-      quantidade: Number(quantidade),
-      preco: Number(preco)
-    }).then(() => navigation.goBack());
+    axios
+      .post(`${API_URL}/produtos`, {
+        nome,
+        quantidade: Number(quantidade),
+        preco: Number(preco)
+      })
+      .then(() => navigation.goBack())
+      .catch(console.error);
   };
 
   return (

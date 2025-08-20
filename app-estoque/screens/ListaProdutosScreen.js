@@ -2,13 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Button, FlatList, StyleSheet } from 'react-native';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'http://192.168.1.129:3000';
 
 export default function ListaProdutosScreen({ navigation }) {
   const [produtos, setProdutos] = useState([]);
 
   const carregar = () => {
-    axios.get(`${API_URL}/produtos`).then(res => setProdutos(res.data));
+    axios
+      .get(`${API_URL}/produtos`)
+      .then(res => setProdutos(res.data))
+      .catch(console.error);
   };
 
   useEffect(() => {
@@ -17,7 +20,10 @@ export default function ListaProdutosScreen({ navigation }) {
   }, [navigation]);
 
   const remover = id => {
-    axios.delete(`${API_URL}/produtos/${id}`).then(carregar);
+    axios
+      .delete(`${API_URL}/produtos/${id}`)
+      .then(carregar)
+      .catch(console.error);
   };
 
   const renderItem = ({ item }) => (

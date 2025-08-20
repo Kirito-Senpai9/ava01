@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, TextInput, Button, StyleSheet } from 'react-native';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'http://192.168.1.129:3000';
 
 export default function EditProdutoScreen({ route, navigation }) {
   const { id } = route.params;
@@ -11,19 +11,25 @@ export default function EditProdutoScreen({ route, navigation }) {
   const [preco, setPreco] = useState('');
 
   useEffect(() => {
-    axios.get(`${API_URL}/produtos/${id}`).then(res => {
-      setNome(res.data.nome);
-      setQuantidade(String(res.data.quantidade));
-      setPreco(String(res.data.preco));
-    });
+    axios
+      .get(`${API_URL}/produtos/${id}`)
+      .then(res => {
+        setNome(res.data.nome);
+        setQuantidade(String(res.data.quantidade));
+        setPreco(String(res.data.preco));
+      })
+      .catch(console.error);
   }, [id]);
 
   const salvar = () => {
-    axios.put(`${API_URL}/produtos/${id}`, {
-      nome,
-      quantidade: Number(quantidade),
-      preco: Number(preco)
-    }).then(() => navigation.goBack());
+    axios
+      .put(`${API_URL}/produtos/${id}`, {
+        nome,
+        quantidade: Number(quantidade),
+        preco: Number(preco)
+      })
+      .then(() => navigation.goBack())
+      .catch(console.error);
   };
 
   return (
