@@ -1,28 +1,14 @@
-// Arquivo: api-bes/knexfile.js
-
+// knexfile.js
 module.exports = {
-development: {
-client: 'sqlite3', // Driver do banco de dados
-
-connection: {
-filename: './cursos.sqlite3' // Arquivo do banco de dados
-},
-
-useNullAsDefault: true, // Configuração padrão para SQLite
-
-migrations: {
-  directory: './migrations' // diretorio para versionamento de schema
-}
-
-}
-
+  development: {
+    client: 'sqlite3',
+    connection: {
+      // pode usar outro nome; este é o arquivo do banco
+      filename: './estoque.sqlite3'
+    },
+    migrations: {
+      directory: './migrations'
+    },
+    useNullAsDefault: true
+  }
 };
-
-
-
-
-
-
-
-
-

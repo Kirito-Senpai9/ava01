@@ -1,7 +1,8 @@
-// index.js - API de Estoque (Node.js + Express)
-// CRUD completo para produtos em memória.
+// index.js - API Estoque com SQLite (Knex)
 const express = require('express');
 const cors = require('cors');
+const knexConfig = require('./knexfile').development;
+const knex = require('knex')(knexConfig);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,75 +10,95 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Estrutura do objeto produto:
-// { id: 1678912345, nome: "Teclado Mecânico", quantidade: 25, preco: 350.50 }
-let produtos = [
-  { id: 1724160001001, nome: "Teclado Mecânico", quantidade: 25, preco: 350.50 },
-  { id: 1724160001002, nome: "Mouse Gamer", quantidade: 40, preco: 129.90 },
-  { id: 1724160001003, nome: "Monitor 24\"", quantidade: 10, preco: 999.00 },
-];
-
-const validarProduto = (body) => {
+// Validação simples
+function validarProduto(body) {
   const erros = [];
-  if (!body || typeof body !== 'object') {
-    erros.push('Corpo da requisição inválido.');
-    return erros;
-  }
-  const { nome, quantidade, preco } = body;
+  if (!body || typeof body !== 'object') erros.push('Corpo inválido.');
+  const { nome, quantidade, preco } = body || {};
   if (!nome || typeof nome !== 'string') erros.push('Campo "nome" é obrigatório e deve ser string.');
-  if (quantidade === undefined || isNaN(Number(quantidade))) erros.push('Campo "quantidade" é obrigatório e deve ser numérico.');
-  if (preco === undefined || isNaN(Number(preco))) erros.push('Campo "preco" é obrigatório e deve ser numérico.');
+  if (quantidade === undefined || isNaN(Number(quantidade))) erros.push('Campo "quantidade" é obrigatório e numérico.');
+  if (preco === undefined || isNaN(Number(preco))) erros.push('Campo "preco" é obrigatório e numérico.');
   return erros;
-};
+}
 
-// GET /produtos: lista completa
-app.get('/produtos', (req, res) => {
-  res.json(produtos);
+// GET /produtos
+app.get('/produtos', async (req, res) => {
+  try {
+    const itens = await knex('produtos').select('*').orderBy('id', 'asc');
+    return res.json(itens);
+  } catch (e) {
+    return res.status(500).json({ erro: 'Falha ao listar produtos.' });
+  }
 });
 
-// GET /produtos/:id: produto específico
-app.get('/produtos/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const produto = produtos.find(p => p.id === id);
-  if (!produto) return res.status(404).json({ erro: 'Produto não encontrado.' });
-  res.json(produto);
+// GET /produtos/:id
+app.get('/produtos/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const item = await knex('produtos').where({ id }).first();
+    if (!item) return res.status(404).json({ erro: 'Produto não encontrado.' });
+    return res.json(item);
+  } catch (e) {
+    return res.status(500).json({ erro: 'Falha ao buscar produto.' });
+  }
 });
 
-// POST /produtos: cria novo
-app.post('/produtos', (req, res) => {
+// POST /produtos
+app.post('/produtos', async (req, res) => {
   const erros = validarProduto(req.body);
   if (erros.length) return res.status(400).json({ erros });
 
-  const { nome, quantidade, preco } = req.body;
-  const id = Date.now(); // id simples baseado em timestamp
-  const novo = { id, nome, quantidade: Number(quantidade), preco: Number(preco) };
-  produtos.push(novo);
-  res.status(201).json(novo);
+  try {
+    const { nome, quantidade, preco } = req.body;
+    const [id] = await knex('produtos').insert({
+      nome,
+      quantidade: Number(quantidade),
+      preco: Number(preco)
+    });
+    const criado = await knex('produtos').where({ id }).first();
+    return res.status(201).json(criado);
+  } catch (e) {
+    return res.status(500).json({ erro: 'Falha ao cadastrar produto.' });
+  }
 });
 
-// PUT /produtos/:id: atualiza
-app.put('/produtos/:id', (req, res) => {
+// PUT /produtos/:id
+app.put('/produtos/:id', async (req, res) => {
   const id = Number(req.params.id);
-  const idx = produtos.findIndex(p => p.id === id);
-  if (idx === -1) return res.status(404).json({ erro: 'Produto não encontrado.' });
-
   const erros = validarProduto(req.body);
   if (erros.length) return res.status(400).json({ erros });
 
-  const { nome, quantidade, preco } = req.body;
-  const atualizado = { id, nome, quantidade: Number(quantidade), preco: Number(preco) };
-  produtos[idx] = atualizado;
-  res.json(atualizado);
+  try {
+    const existe = await knex('produtos').where({ id }).first();
+    if (!existe) return res.status(404).json({ erro: 'Produto não encontrado.' });
+
+    const { nome, quantidade, preco } = req.body;
+    await knex('produtos').where({ id }).update({
+      nome,
+      quantidade: Number(quantidade),
+      preco: Number(preco),
+      updated_at: knex.fn.now()
+    });
+
+    const atualizado = await knex('produtos').where({ id }).first();
+    return res.json(atualizado);
+  } catch (e) {
+    return res.status(500).json({ erro: 'Falha ao atualizar produto.' });
+  }
 });
 
-// DELETE /produtos/:id: remove
-app.delete('/produtos/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const lenAntes = produtos.length;
-  produtos = produtos.filter(p => p.id != id);
-  if (produtos.length === lenAntes) return res.status(404).json({ erro: 'Produto não encontrado.' });
-  res.status(204).send();
+// DELETE /produtos/:id
+app.delete('/produtos/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const deletados = await knex('produtos').where({ id }).del();
+    if (!deletados) return res.status(404).json({ erro: 'Produto não encontrado.' });
+    // Responder 200 com JSON (evita bug de 204 em algumas versões do Axios/RN)
+    return res.status(200).json({ ok: true, idRemovido: id });
+  } catch (e) {
+    return res.status(500).json({ erro: 'Falha ao excluir produto.' });
+  }
 });
 
-app.get('/', (req, res) => res.send('Servidor da API de Estoque rodando.'));
+app.get('/', (req, res) => res.send('Servidor da API de Estoque (SQLite) rodando.'));
 app.listen(PORT, () => console.log(`Servidor da API rodando em http://localhost:${PORT}`));
