@@ -1,7 +1,7 @@
 // src/api.js
 import axios from 'axios';
 
-// Atenção: substitua pelo IP da sua máquina na mesma rede do celular/Expo Go.
+// Atenção: substitua pelo IP da sua máquina na mesma rede do celular/Expo Go000000.
 // Ex.: http://192.168.0.10:3000
 export const API_BASE_URL = 'http://192.168.0.101:3000';
 
